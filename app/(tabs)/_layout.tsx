@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from 'expo-router';
 import { useAuthStore } from '@/store/useAuthStore';
-import { TimeIcon, TargetIcon, SettingsIcon } from '@/components/ui/icons';
+import { TimeIcon, SettingsIcon } from '@/components/ui/icons';
 import { COLORS } from '@/constants/theme';
 
 export default function TabsLayout() {
@@ -21,10 +21,6 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="time"
         options={{ title: 'Time', tabBarIcon: ({ color, size }) => <TimeIcon color={String(color)} size={size} /> }}
-      />
-      <Tabs.Screen
-        name="goals"
-        options={{ title: '목표', tabBarIcon: ({ color, size }) => <TargetIcon color={String(color)} size={size} /> }}
       />
       <Tabs.Screen
         name="settings"

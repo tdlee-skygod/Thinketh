@@ -33,13 +33,6 @@
           "backgroundColor": "#1e1b4b"
         }
       ],
-      [
-        "expo-speech-recognition",
-        {
-          "microphonePermission": "문구를 음성으로 입력하려면 마이크 접근 권한이 필요합니다.",
-          "speechRecognitionPermission": "문구를 음성으로 입력하려면 음성 인식 권한이 필요합니다."
-        }
-      ],
       "expo-font"
     ]
   }

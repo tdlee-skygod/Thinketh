@@ -5,42 +5,6 @@ export interface Profile {
   createdAt: string;
 }
 
-export interface GoalCategory {
-  id: string;
-  userId: string;
-  name: string;
-  sortOrder: number;
-  createdAt: string;
-}
-
-export interface Goal {
-  id: string;
-  userId: string;
-  categoryId: string;
-  text: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GoalEntry {
-  id: string;
-  userId: string;
-  goalId: string;
-  date: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GoalAspiration {
-  id: string;
-  userId: string;
-  goalId: string;
-  date: string;
-  content: string;
-  createdAt: string;
-}
-
 // 나의 시간 설정 (F-21, 사용자당 1개)
 export interface TimeSettings {
   userId: string;

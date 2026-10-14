@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path, Polyline, Line, Circle, Rect } from 'react-native-svg';
+import Svg, { Path, Polyline, Line, Circle } from 'react-native-svg';
 
 export interface TabIconProps {
   color: string;
@@ -7,41 +7,6 @@ export interface TabIconProps {
 }
 
 const STROKE_WIDTH = 2;
-
-export function MicIcon({ color, size = 22 }: TabIconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Rect x="9" y="2" width="6" height="12" rx="3" stroke={color} strokeWidth={STROKE_WIDTH} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M5 10v1a7 7 0 0014 0v-1" stroke={color} strokeWidth={STROKE_WIDTH} strokeLinecap="round" strokeLinejoin="round" />
-      <Line x1="12" y1="18" x2="12" y2="22" stroke={color} strokeWidth={STROKE_WIDTH} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-export function TargetIcon({ color, size = 22 }: TabIconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={STROKE_WIDTH} />
-      <Circle cx="12" cy="12" r="5" stroke={color} strokeWidth={STROKE_WIDTH} />
-      <Circle cx="12" cy="12" r="1.2" fill={color} />
-    </Svg>
-  );
-}
-
-export function BellIcon({ color, size = 22 }: TabIconProps) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M6 8a6 6 0 0112 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6z"
-        stroke={color}
-        strokeWidth={STROKE_WIDTH}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path d="M10 18a2 2 0 004 0" stroke={color} strokeWidth={STROKE_WIDTH} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
 
 export function TimeIcon({ color, size = 22 }: TabIconProps) {
   return (

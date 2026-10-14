@@ -24,6 +24,23 @@
 
 ---
 
+## 단계 0 — 조각 1: 목표 탭·음성 입력 제거 — 2026.10.14
+
+> 단계 0은 4개 조각으로 진행한다: ① 목표·음성 제거(이번) ② 로컬 DB·`useTimeStore` 교체 + Supabase·로그인 삭제 ③ 앱 잠금·시작 순서·DB 복구 화면 ④ 설정 정리·점검. `useTimeStore`가 Supabase·`useAuthStore`에 묶여 있어 Supabase·로그인 삭제는 ②에서 함께 한다.
+
+### 삭제 (remove)
+- 목표 탭 `app/(tabs)/goals.tsx`, `components/goal/*`(3개), `store/useGoal*Store`(4개), `store/useVoiceFocusStore.ts`
+- `types/index.ts`의 목표 관련 타입 4개, `components/ui/icons.tsx`의 `MicIcon`·`TargetIcon`·`BellIcon`
+- 의존성 `expo-speech`, `expo-speech-recognition`, `app.json`의 음성 인식 플러그인
+- `(tabs)/_layout.tsx`의 목표 탭 항목 — 탭은 Time/설정 2개(통계 탭은 단계 2)
+
+### 확인
+- `npx tsc --noEmit` 통과. 빌드·실기기 확인은 하지 않음
+- `AndroidManifest.xml`의 `RECORD_AUDIO`·음성 인식 `<queries>`는 단계 9에서 삭제(D-244)
+
+### 확정 결정
+- D-240 중 목표 탭·음성 입력 제거 부분 ✅ 반영
+
 ## 공개 저장소 준비·설계 보완 확정 — 2026.10.14
 
 > **앱 코드는 아직 변경하지 않았다.** 문서와 저장소 구성만 정리했다.
