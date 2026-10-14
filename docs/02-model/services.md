@@ -23,6 +23,7 @@
 | `pin_hash`, `pin_salt` | 6자리 PIN의 해시와 솔트. 평문 PIN은 저장하지 않는다(D-235) |
 | `pin_fail_count`, `pin_lock_until` | 연속 실패 횟수와 대기 종료 시각 |
 | `biometric_enabled` | 생체인증 사용 여부 |
+| `lock_timeout_sec` | 백그라운드 후 재잠금까지의 시간(기본 30초). DB를 열기 전에 필요해 DB가 아닌 여기에 둔다 |
 
 - 생체인증과 PIN 재설정(기기 잠금 인증)은 `expo-local-authentication`을 쓴다.
 - 이 값들은 로그·화면·백업 파일에 절대 포함하지 않는다(D-244).

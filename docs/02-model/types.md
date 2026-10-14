@@ -3,10 +3,9 @@
 > `types/index.ts`에 정의한다. 로컬 DB 스키마([db-schema.md](db-schema.md))와 1:1 대응한다. 서버·계정이 없어 `userId`가 없다. 표기: 📝 v2 계획(코드 미반영).
 
 ```typescript
-// 앱 설정 (settings, 1행) — 과거 계산에 영향이 없는 값
+// 앱 설정 (settings, 1행) — 과거 계산에 영향이 없는 값. 자동 잠금 시간은 SecureStore(lib/secure.ts)에 둔다
 export interface AppSettings {
   compoundRatePct: number;        // 연 %, 기본 5
-  lockTimeoutSec: number;         // 기본 30
   widgetShowAmount: boolean;      // 기본 false
 }
 

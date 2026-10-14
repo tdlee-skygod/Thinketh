@@ -24,6 +24,26 @@
 
 ---
 
+## 단계 0 — 조각 3: 앱 잠금·시작 순서·DB 복구 화면 — 2026.10.14
+
+> 코드 변경만 했고 빌드·실기기 확인은 하지 않았다. 빌드 후 확인할 항목: PIN scrypt 해제 속도, 백그라운드 진입 시 화면 가림 타이밍(최근 앱 미리보기), 생체인증, DB 복구 화면.
+
+### 추가 (feat)
+- `lib/pin.ts`(scrypt PIN 해시·검증, 실패 대기 시간), `lib/secure.ts` 확장(PIN·실패 상태·생체인증·자동 잠금 시간), `store/useLockStore.ts`
+- `components/lock/`(PinPad, PinSetupScreen, LockScreen, TextLink), `components/DbRecovery.tsx`, `app/modal/pin-change.tsx`
+- `lib/localDb.ts`의 `archiveDbFiles()`: 열 수 없는 DB 파일을 지우지 않고 `thinketh.db.bak-날짜`로 이름만 변경
+- 의존성 `expo-local-authentication`, `expo-screen-capture`, `expo-file-system`, `@noble/hashes`
+
+### 수정 (refactor)
+- `app/_layout.tsx`: 시작 순서(폰트·잠금 상태 → PIN 설정/잠금 화면 → DB 열기 → 복구 화면 또는 앱), `AppState`로 백그라운드 재잠금, 잠금·백그라운드 때만 `expo-screen-capture`로 화면 가림
+- `settings.tsx`: "앱 잠금" 그룹(PIN 변경, 생체인증, 자동 잠금 시간, 기기 잠금 없음 안내)
+
+### 문서 (docs)
+- 자동 잠금 시간은 DB가 아니라 SecureStore(DB 열기 전에 필요), 잠금·복구 화면은 라우트가 아닌 컴포넌트, 복구 화면의 백업 가져오기는 단계 1로 보류 — db-schema·types·stores·navigation·services·setup-build 반영
+
+### 확인
+- `npx tsc --noEmit` 통과
+
 ## 단계 0 — 조각 2: 로컬 DB 신설·Supabase 삭제 — 2026.10.14
 
 > 코드 변경만 했고 빌드·실기기 확인은 하지 않았다(새 네이티브 모듈이 있어 개발용 빌드가 필요). 네이티브 반영은 빌드 때 `npx expo prebuild`(`--clean` 없이) 후 `git diff`로 검토한다.

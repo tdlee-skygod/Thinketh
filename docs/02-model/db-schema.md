@@ -7,7 +7,7 @@
 - 날짜 컬럼: `TEXT 'YYYY-MM-DD'` (KST, D-002). 시각 컬럼: `TEXT` ISO 8601 UTC.
 - 시간은 **분(INTEGER)**, 금액은 **원(INTEGER)** — 소수 오차를 피한다(D-239).
 - 기본키: 앱에서 만든 UUID `TEXT`.
-- 계정이 없으므로 `user_id` 컬럼이 없다. 암호화 키(D-236)와 앱 잠금(D-235) 정보는 DB가 아니라 SecureStore에 둔다.
+- 계정이 없으므로 `user_id` 컬럼이 없다. 암호화 키(D-236)와 앱 잠금(D-235) 정보는 자동 잠금 시간(`lock_timeout_sec`)을 포함해 DB가 아니라 SecureStore에 둔다(잠금 판단이 DB를 열기 전에 일어나므로).
 - 스키마 변경은 `schema_version`의 순차 마이그레이션으로만 한다(`lib/localDb.ts`).
 - 테이블 이름에 접두사를 쓰지 않는다.
 - **지난 날짜의 행은 수정하지 않는다**(D-250). 이 제약은 DB 트리거가 아니라 store·`lib/`의 수정 가능 여부 판정으로 강제한다.
@@ -34,7 +34,6 @@ create table schema_version (
 create table settings (
   id integer primary key check (id = 1),
   compound_rate_pct real not null default 5.0,       -- 복리 가정 수익률, 연 %(F-29)
-  lock_timeout_sec integer not null default 30,      -- 백그라운드 후 재잠금(F-23)
   widget_show_amount integer not null default 0      -- 위젯 금액 표시(F-32)
 );
 

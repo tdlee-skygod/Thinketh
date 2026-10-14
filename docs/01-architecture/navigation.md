@@ -8,7 +8,7 @@
 app/
 ├── _layout.tsx                루트 Stack. 📝 잠금 상태 확인 후 lock/(tabs) 분기. modal 프레젠테이션 라우트 등록
 │
-├── lock.tsx                   📝 앱 잠금 화면(PIN/생체인증, F-23) — 잠금 상태면 모든 화면 위에서 표시
+├── (잠금 화면)                ✅ 라우트가 아니라 컴포넌트(`components/lock/LockScreen`·`PinSetupScreen`). 루트 레이아웃이 잠금 상태면 앱 본체 대신 렌더링(딥링크로 접근 불가, D-235)
 │
 ├── (tabs)/                    하단 탭 (📝 3개: Time · 통계 · 설정)
 │   ├── _layout.tsx
@@ -22,7 +22,8 @@ app/
     ├── timer.tsx              📝 실시간 타이머 진행 화면(F-27)
     ├── reflection.tsx         📝 오늘의 한 줄 회고 시트(F-31) — 알림/통계 탭에서 진입
     ├── backup.tsx             📝 내보내기/가져오기(F-25)
-    └── db-recovery.tsx        📝 DB 열기 실패 안내(백업에서 가져오기/새로 시작, D-253)
+    ├── pin-change.tsx         ✅ PIN 변경(현재 PIN 확인 → 새 PIN 두 번)
+    └── (DB 복구 화면)          ✅ 라우트가 아니라 `components/DbRecovery`. DB 열기 실패 때 루트가 렌더링(새로 시작만, 백업 가져오기는 단계 1)
 ```
 
 ## 화면 전환 흐름

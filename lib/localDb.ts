@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import type { SQLiteBindParams } from 'expo-sqlite';
+import { File } from 'expo-file-system';
 import { createDbKey, readDbKey } from '@/lib/secure';
 import type { DbOpenResult } from '@/types';
 
@@ -128,4 +129,15 @@ export function dbTransaction(task: () => Promise<void>): Promise<void> {
   const run = txQueue.then(() => requireDb().withTransactionAsync(task));
   txQueue = run.catch(() => undefined);
   return run;
+}
+
+// 열 수 없는 DB 파일을 지우지 않고 이름만 바꿔 보존한다 (D-253). DB가 닫혀 있을 때(열기 실패 직후)만 호출한다.
+// 암호화 키(SecureStore)는 그대로 두므로, 새로 만든 DB도 같은 키를 쓰고 보존한 파일은 원래 키가 맞다면 나중에 열 수 있다.
+export async function archiveDbFiles(): Promise<void> {
+  if (db) throw new Error('DB가 열려 있을 때는 보존할 수 없습니다');
+  const stamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+  for (const suffix of ['', '-wal', '-shm']) {
+    const file = new File(`file://${SQLite.defaultDatabaseDirectory}/${DB_NAME}${suffix}`);
+    if (file.exists) file.rename(`${DB_NAME}${suffix}.bak-${stamp}`);
+  }
 }

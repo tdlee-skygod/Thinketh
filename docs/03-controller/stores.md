@@ -3,21 +3,27 @@
 > 표기: 📝 v2 계획(코드 미반영). 모든 스토어는 로컬 DB(`lib/localDb`)를 사용하고 `userId`가 없다(D-234).
 > 현재 코드의 `useAuthStore`·`useGoal*Store`·`useVoiceFocusStore`와 Supabase 기반 `useTimeStore`는 단계 0에서 삭제·교체한다(D-238, D-240).
 
-## useLockStore 📝 (F-23)
+## useLockStore ✅ (F-23, 단계 0 조각 3 — 빌드 검증 전)
 
 ```typescript
 interface LockState {
-  isLocked: boolean;
-  hasPin: boolean;
+  status: 'loading' | 'needs_setup' | 'locked' | 'unlocked';
   biometricEnabled: boolean;
+  lockTimeoutSec: number;                           // SecureStore에 저장(DB 열기 전에 필요), 기본 30
   failCount: number;
-  lockedUntil: string | null;                       // 연속 실패 대기 종료 시각
-  init: () => Promise<void>;                        // SecureStore 상태 읽기, 초기 잠금 상태 결정
-  setupPin: (pin: string) => Promise<void>;         // 첫 설정
-  unlock: (pin: string) => Promise<boolean>;        // 해시 비교, 실패 시 failCount 증가
+  lockUntilMs: number | null;                       // 연속 실패 대기 종료 시각(epoch ms)
+  backgroundedAt: number | null;
+  init: () => Promise<void>;                        // SecureStore 상태 읽기, 초기 상태 결정
+  setupPin: (pin: string, enableBiometric: boolean) => Promise<void>;   // 첫 설정, 기기 잠금 인증 뒤 재설정에도 사용
+  checkPin: (pin: string) => Promise<'ok' | 'wrong' | 'wait'>;          // 실패 횟수·대기 시간 반영, 상태는 바꾸지 않음
+  unlock: (pin: string) => Promise<'ok' | 'wrong' | 'wait'>;
   unlockWithBiometric: () => Promise<boolean>;
-  resetPinWithDeviceAuth: (newPin: string) => Promise<boolean>;   // 기기 잠금 인증 후 재설정
-  lockNow: () => void;                              // 백그라운드 timeout 경과 시 호출
+  authenticateDevice: (message: string) => Promise<boolean>;            // 기기 잠금 인증(PIN 분실 시 재설정 전 단계)
+  changePin: (newPin: string) => Promise<void>;
+  setBiometricEnabled: (enabled: boolean) => Promise<boolean>;
+  setLockTimeoutSec: (sec: number) => Promise<void>;
+  onBackground: () => void;                         // AppState 전환 시각 기록
+  onForeground: () => void;                         // timeout 경과 시 locked
 }
 ```
 
