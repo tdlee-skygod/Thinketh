@@ -52,3 +52,15 @@ export interface EditCheck {
 export type DbOpenResult =
   | { ok: true }
   | { ok: false; reason: 'newer_version' | 'key_mismatch' | 'corrupted' | 'transient' };
+
+// 내보내기 파일의 평문 구조 (암호화 전, D-237). 앞으로 추가되는 테이블은 필드를 추가하고 formatVersion은 유지한다(없으면 빈 배열로 취급)
+export interface BackupPayload {
+  formatVersion: number;
+  schemaVersion: number;
+  exportedAt: string;
+  daySettings: DaySettings[];
+  ratePeriods: RatePeriod[];
+  timeLogs: TimeLog[];
+}
+
+export type BackupMode = 'overwrite' | 'merge';

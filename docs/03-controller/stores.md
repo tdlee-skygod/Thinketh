@@ -119,6 +119,18 @@ interface RewardState { rewards: Reward[]; fetchRewards(): Promise<void>; setRew
 interface ReflectionState { reflections: Reflection[]; fetchReflections(): Promise<void>; saveReflection(date: string, content: string): Promise<void>; }   // 오늘 것만 저장 가능(D-250)
 ```
 
+## useBackupStore ✅ (F-25, 단계 1-B — 빌드 검증 전)
+
+```typescript
+interface BackupState {
+  isBusy: boolean;
+  exportBackup: (password: string) => Promise<void>;                                       // 파일 생성 → 공유 시트 → 임시 파일 삭제
+  importBackup: (uri: string, password: string, mode: BackupMode) => Promise<ImportSummary>; // 복호화·검증 → 트랜잭션 반영 → 관련 스토어 재조회
+}
+```
+
+비밀번호는 상태에 저장하지 않는다. 알림·위젯·마일스톤 재계산은 해당 기능이 생기는 단계에서 `importBackup` 끝에 이어 붙인다. DB가 닫힌 복구 화면(`DbRecovery`)은 스토어를 쓸 수 없어 `lib/backup`을 직접 호출한다(예외).
+
 ## 원칙
 
 - 스토어만 `lib/localDb`를 호출한다. 화면은 스토어만 호출한다(D-001).

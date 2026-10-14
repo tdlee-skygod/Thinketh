@@ -38,12 +38,13 @@
 - 알림 시각은 KST로 저장하고 예약 시 기기 시각으로 변환한다. 본문은 일반 문구이며 금액을 넣지 않는다.
 - 알림을 누르면 종류에 따라 Time 탭 / 회고 시트 / 마일스톤 화면으로 이동한다(잠금 상태면 lock을 먼저 거침).
 
-## 백업 (`lib/backup.ts`) 📝
+## 백업 (`lib/backupCrypto.ts`·`lib/backupPayload.ts`·`lib/backup.ts`) ✅ 단계 1-B (빌드 검증 전)
 
-- `exportBackup(password)`: DB를 `BackupPayload`(types.md)로 직렬화 → `@noble/hashes` scrypt로 비밀번호에서 키 유도 → `@noble/ciphers` XChaCha20-Poly1305로 암호화 → 형식/버전 헤더를 붙인 파일로 저장 후 공유 시트(`expo-sharing`). 비밀번호 없이는 내보낼 수 없다(D-237).
+- 구성: `backupCrypto`(scrypt N=2¹⁴ + XChaCha20-Poly1305, 헤더를 AAD로 묶음, 순수), `backupPayload`(내용 검증·병합 계획, 순수), `backup`(파일·DB·공유 I/O). 비밀번호는 8자 이상. UTF-8 복호화는 Hermes의 `TextDecoder`에 의존하지 않고 직접 구현.
+- (설계) `exportBackup(password)`: DB를 `BackupPayload`(types.md)로 직렬화 → `@noble/hashes` scrypt로 비밀번호에서 키 유도 → `@noble/ciphers` XChaCha20-Poly1305로 암호화 → 형식/버전 헤더를 붙인 파일로 저장 후 공유 시트(`expo-sharing`). 비밀번호 없이는 내보낼 수 없다(D-237).
 - `importBackup(file, password, mode)`: 파일 크기·헤더·버전 확인 → 복호화(실패·변조 시 거부) → 스키마 검증 → 하나의 트랜잭션으로 `overwrite` 또는 `merge` 반영.
   - `overwrite`: 확인 후 전체 교체.
-  - `merge`(D-253): `rate_periods`·`day_settings`는 통째 교체, 나머지는 id(또는 date) 기준 병합하고 `updated_at`이 최신인 쪽 채택. **이미 확정된 날짜의 로컬 기록·회고는 덮어쓰지 않는다.**
+  - `merge`(D-253, 구현): `rate_periods`·`day_settings`는 통째 교체하되 이 폰의 지난 기간·지난 설정을 바꾸게 되면 거부(D-250). 기록은 **오늘 이후 날짜만** id 기준으로 합치고 `updated_at`이 최신인 쪽을 채택하며, 지난 날짜의 기록은 추가도 갱신도 하지 않는다(전체 복원은 `overwrite`).
   - 반영 뒤 일 단위 확정 → 알림 재예약 → 위젯 갱신 → 마일스톤 검사를 각각 독립적으로 실행한다(D-252).
 - 비밀번호·평문 페이로드는 로그에 남기지 않는다.
 

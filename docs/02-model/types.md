@@ -113,7 +113,7 @@ export type DbOpenResult =
   | { ok: true }
   | { ok: false; reason: 'newer_version' | 'key_mismatch' | 'corrupted' | 'transient' };
 
-// 내보내기 파일의 평문 구조 (암호화 전, D-237)
+// 내보내기 파일의 평문 구조 (암호화 전, D-237). 구현(단계 1-B)은 daySettings·ratePeriods·timeLogs만 포함하며, 이후 단계의 테이블은 필드를 추가한다(formatVersion 유지, 없으면 빈 배열)
 export interface BackupPayload {
   formatVersion: number;
   schemaVersion: number;

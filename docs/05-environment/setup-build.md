@@ -12,10 +12,10 @@
 | 추가 ✅ | `expo-local-authentication` | 생체인증, PIN 재설정 (D-235) |
 | 추가 ✅ | `expo-crypto` | 무작위 키 생성 |
 | 추가 ✅ | `expo-screen-capture` | 잠금·백그라운드 때만 화면 가림 (D-235) |
-| 추가 | `@noble/ciphers` | 백업 파일 암호화 (D-237) — 단계 1 |
+| 추가 ✅ | `@noble/ciphers` | 백업 파일 암호화 (D-237) |
 | 추가 ✅ | `@noble/hashes` | PIN 해시(scrypt), 백업 키 유도 (D-235, D-237) |
 | 추가 ✅ | `expo-file-system` | DB 파일 보존(이름 변경), 내보내기/가져오기 |
-| 추가 | `expo-sharing`, `expo-document-picker` | 내보내기/가져오기 — 단계 1 |
+| 추가 ✅ | `expo-sharing`, `expo-document-picker` | 내보내기/가져오기 |
 | 유지 | `expo-notifications` | 로컬 예약 알림 (D-241) |
 | 유지 | `@react-native-community/datetimepicker`, `expo-linear-gradient`, `expo-font`, `react-native-svg`, `zustand` | Time 탭·기간 입력 등 |
 | 제거 ✅ | `expo-speech`, `expo-speech-recognition`(+ `app.json` 플러그인) | 목표 탭 삭제 (D-240) |

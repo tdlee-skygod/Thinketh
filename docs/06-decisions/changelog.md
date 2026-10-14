@@ -24,6 +24,23 @@
 
 ---
 
+## 단계 1 — 조각 1-B: 내보내기/가져오기 — 2026.10.14
+
+> 코드 변경만 했고 빌드·실기기 확인은 하지 않았다. 단계 1 완료(코드 기준).
+
+### 추가 (feat)
+- `lib/backupCrypto.ts`(scrypt N=2¹⁴ + XChaCha20-Poly1305, 헤더 AAD, kdf 비용 상한, 직접 구현한 UTF-8 복호화), `lib/backupPayload.ts`(엄격한 내용 검증, 병합 계획), `lib/backup.ts`(파일·DB·공유), `store/useBackupStore.ts`, `app/modal/backup.tsx`, 설정 탭 "백업" 그룹
+- `DbRecovery`에 [백업에서 가져오기]: 파일 복호화·검증 통과 후에만 기존 DB 파일을 보존(이름 변경)하고 새 DB에 반영
+- 의존성 `@noble/ciphers`, `expo-sharing`, `expo-document-picker`
+- 테스트 `backupCrypto`·`backupPayload` — 전체 68건
+
+### 확정 보완
+- 병합은 오늘 이후 기록만 합치고 지난 날짜 기록은 추가·갱신하지 않음. 기간·설정 교체가 지난 값을 바꾸면 거부. 전체 복원은 덮어쓰기 (D-253 보완)
+
+### 확인
+- `npm test` 68건 통과, `npx tsc --noEmit` 통과
+- 빌드 후 확인할 항목: 파일 공유 시트, 파일 선택기(캐시 복사 경로), scrypt 소요 시간, 복구 화면 가져오기
+
 ## 단계 1 — 조각 1-A: 기간별 시간당 비용·지난 날짜 수정 불가 — 2026.10.14
 
 > 코드 변경만 했고 빌드·실기기 확인은 하지 않았다. 단계 1 나머지(1-B: 내보내기/가져오기)는 다음 조각.

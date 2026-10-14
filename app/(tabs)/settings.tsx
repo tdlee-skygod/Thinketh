@@ -98,6 +98,17 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
+      <Text style={styles.groupTitle}>백업</Text>
+      <View style={styles.card}>
+        <Pressable style={styles.linkRow} onPress={() => router.push('/modal/backup')}>
+          <View style={styles.flex1}>
+            <Text style={styles.label}>내보내기 / 가져오기</Text>
+            <Text style={styles.sub}>데이터는 이 폰에만 있어요. 비밀번호로 보호된 백업 파일을 만들어 두세요</Text>
+          </View>
+          <Text style={styles.chevron}>›</Text>
+        </Pressable>
+      </View>
+
     </ScrollView>
   );
 }

@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { TextLink } from '@/components/lock/TextLink';
-import { archiveDbFiles } from '@/lib/localDb';
+import * as DocumentPicker from 'expo-document-picker';
+import { archiveDbFiles, openDb } from '@/lib/localDb';
+import { applyImport, prepareImport } from '@/lib/backup';
+import { BackupError } from '@/lib/backupCrypto';
 import { COLORS, FONT, RADIUS, SPACING } from '@/constants/theme';
 import type { DbOpenResult } from '@/types';
 
@@ -20,6 +23,10 @@ export function DbRecovery({ reason, onRetry }: DbRecoveryProps) {
   const [confirming, setConfirming] = useState(false);
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [pickedUri, setPickedUri] = useState<string | null>(null);
+  const [pickedName, setPickedName] = useState('');
+  const [password, setPassword] = useState('');
 
   const startFresh = async () => {
     setBusy(true);
@@ -29,6 +36,43 @@ export function DbRecovery({ reason, onRetry }: DbRecoveryProps) {
     } catch {
       setBusy(false);
       Alert.alert('오류', '기존 데이터 파일을 보존하지 못해 새로 시작하지 않았어요.');
+    }
+  };
+
+  const pickFile = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true, multiple: false });
+      if (result.canceled || result.assets.length === 0) return;
+      setPickedUri(result.assets[0].uri);
+      setPickedName(result.assets[0].name);
+    } catch {
+      Alert.alert('오류', '파일을 선택하지 못했어요.');
+    }
+  };
+
+  // 순서: 파일 복호화·검증(DB 무관) → 통과하면 기존 DB 파일 보존(이름 변경) → 새 DB 열기 → 덮어쓰기 반영.
+  // 검증에 실패하면 기존 파일을 건드리지 않는다. 이 화면은 DB가 닫혀 있어 스토어를 쓸 수 없어 lib을 직접 호출한다(복구 화면의 예외).
+  const importFromBackup = async () => {
+    if (!pickedUri || password.length === 0) {
+      Alert.alert('입력 확인', '백업 파일과 비밀번호를 입력해 주세요.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const payload = await prepareImport(pickedUri, password);
+      await archiveDbFiles();
+      const opened = await openDb();
+      if (!opened.ok) throw new Error('open_failed');
+      await applyImport(payload, 'overwrite');
+      onRetry();
+    } catch (e) {
+      setBusy(false);
+      Alert.alert(
+        '가져오기 실패',
+        e instanceof BackupError ? e.message : '복원하지 못했어요. 기존 데이터 파일은 보관되어 있어요.'
+      );
+    } finally {
+      setPassword('');
     }
   };
 
@@ -62,8 +106,27 @@ export function DbRecovery({ reason, onRetry }: DbRecoveryProps) {
           : '앱을 지우거나 데이터를 삭제하면 암호 키가 사라져 이전 데이터를 열 수 없어요.'}
         {'\n\n'}새로 시작해도 기존 파일은 지우지 않고 보관해 둬요.
       </Text>
-      {!confirming ? (
-        <Button title="새로 시작" onPress={() => setConfirming(true)} />
+      {importing ? (
+        <View style={styles.confirm}>
+          <TextLink title={pickedName ? `선택됨: ${pickedName}` : '백업 파일 선택'} onPress={pickFile} disabled={busy} />
+          <TextInput
+            style={styles.input}
+            value={password}
+            onChangeText={setPassword}
+            placeholder="백업 비밀번호"
+            placeholderTextColor={COLORS.textMuted}
+            secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <Button title="백업에서 가져오기" onPress={importFromBackup} loading={busy} />
+          <TextLink title="취소" onPress={() => { setImporting(false); setPickedUri(null); setPickedName(''); setPassword(''); }} disabled={busy} />
+        </View>
+      ) : !confirming ? (
+        <View style={styles.confirm}>
+          <Button title="백업에서 가져오기" onPress={() => setImporting(true)} />
+          <TextLink title="새로 시작" onPress={() => setConfirming(true)} />
+        </View>
       ) : (
         <View style={styles.confirm}>
           <Text style={styles.body}>새로 시작하려면 아래에 "{CONFIRM_WORD}"를 입력해 주세요.</Text>

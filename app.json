@@ -34,9 +34,15 @@
         }
       ],
       "expo-font",
-      ["expo-sqlite", { "useSQLCipher": true }],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
       "expo-secure-store",
-      "expo-local-authentication"
+      "expo-local-authentication",
+      "expo-sharing"
     ]
   }
 }
