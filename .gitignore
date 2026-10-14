@@ -1,0 +1,59 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env
+.env*.local
+
+# 민감 파일 (CLAUDE.md § 6 절대 금지 사항)
+*.keystore
+keystore.properties
+google-services.json
+GoogleService-Info.plist
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+# android/는 위젯 등 네이티브 변경을 git으로 관리하므로 추적한다 (D-253). 빌드 산출물·비밀만 제외
+/ios
+/android/build/
+/android/.gradle/
+/android/local.properties
+/android/app/build/
+/android/app/.cxx/
+*.apk
+*.aab
+
+# 공개 저장소에 올리지 않는 로컬 전용 폴더
+.claude/
+ref/
