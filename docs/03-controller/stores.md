@@ -29,14 +29,14 @@ interface LockState {
 
 잠금 판단은 `AppState` 전환 시각과 `settings.lock_timeout_sec`로 한다. 잠금 상태에서는 어떤 화면도 렌더링하지 않고 lock 화면만 보인다.
 
-## useRateStore 📝 (F-24, D-239)
+## useRateStore ✅ (F-24, D-239·D-250 — 단계 1-A, 빌드 검증 전)
 
 ```typescript
 interface RateState {
   periods: RatePeriod[];                            // start_date 오름차순
   fetchPeriods: () => Promise<void>;
   validate: (draft: RatePeriod[]) => RateIssue[];   // 겹침, 빈 날, 종료일<시작일
-  savePeriods: (draft: RatePeriod[]) => Promise<void>;   // validate·checkPeriodEdit 통과 시에만 트랜잭션 저장
+  savePeriods: (draft: RatePeriod[]) => Promise<{ ok: true } | { ok: false; message: string }>;   // validate·checkPeriodEdit 통과 시에만 트랜잭션 저장, 실패는 화면에 안내할 문구로 반환
   checkEdit: (before: RatePeriod[], after: RatePeriod[]) => EditCheck;   // 시작일이 오늘 이전인 기간의 단가·시작일 변경·삭제는 거부(D-250)
   autoAdjustAfterEdit: (periods: RatePeriod[], editedId: string) => RatePeriod[];   // 종료일 변경 시 다음 기간 시작일 맞춤
 }
@@ -46,7 +46,7 @@ interface RateState {
 
 ## useTimeStore (Time 탭, F-21)
 
-> ✅ 단계 0(조각 2) 구현은 아래 최종 인터페이스의 부분집합이다: `settings`는 `TimeSettings`(비용 기간 1개 + 최초 `day_settings` 행의 합성 뷰), 합계는 `todayMinutes`/`pastMinutes`(분), `saveTimeSettings(start, end, rate, 가용시간, 활동 시작, 활동 종료)`가 임시로 최초 행을 덮어쓴다. 기록 API는 분(minutes) 단위다. 최종 형태는 단계 1·2에서 맞춘다.
+> ✅ 단계 1-A 구현: `daySettings`(날짜별 적용값 목록), `dailyMinutes`(날짜→분), `recentLogs`, `fetchDaySettings`/`saveDaySettings`(기록·기간이 없으면 즉시, 있으면 내일 행 upsert)/`fetchSummary`/`fetchRecentLogs`/`addTimeLog`/`updateTimeLog`/`deleteTimeLog`. 수정·삭제는 오늘 기록만 가능하고 지난 날이면 저장하지 않고 `EditCheck`를 돌려준다(D-250). `closings`·`closePastDays`는 단계 2에서 추가한다.
 
 ## useTimeStore 최종 인터페이스 📝
 

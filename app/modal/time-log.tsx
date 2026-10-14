@@ -7,7 +7,11 @@ import { Button } from '@/components/ui/Button';
 import { TextField } from '@/components/ui/TextField';
 import { TrashIcon } from '@/components/ui/icons';
 import { COLORS, SPACING, RADIUS, FONT } from '@/constants/theme';
+import { localDateStr } from '@/lib/date';
+import { checkDateEdit } from '@/lib/rates';
 import type { TimeLog } from '@/types';
+
+const LOCKED_MESSAGE = '이미 확정된 기록입니다. 지난 날의 기록은 고칠 수 없어요.';
 
 // 저장은 분(정수), 화면은 시간(소수 2자리) — D-239
 function minutesToHours(minutes: number): number {
@@ -34,6 +38,10 @@ export default function TimeLogModal() {
   }, [fetchRecentLogs]);
 
   const handleSelectLog = (log: TimeLog) => {
+    if (!checkDateEdit(log.date, localDateStr()).editable) {
+      Alert.alert('수정할 수 없어요', LOCKED_MESSAGE);
+      return;
+    }
     setEditingId(log.id);
     setTitle(log.title);
     setContent(log.content);
@@ -62,7 +70,11 @@ export default function TimeLogModal() {
     setIsSubmitting(true);
     try {
       if (editingId) {
-        await updateTimeLog(editingId, title.trim(), content.trim(), minutes);
+        const check = await updateTimeLog(editingId, title.trim(), content.trim(), minutes);
+        if (!check.editable) {
+          Alert.alert('수정할 수 없어요', LOCKED_MESSAGE);
+          return;
+        }
       } else {
         await addTimeLog(title.trim(), content.trim(), minutes);
       }
@@ -84,7 +96,11 @@ export default function TimeLogModal() {
         onPress: async () => {
           setDeletingId(log.id);
           try {
-            await deleteTimeLog(log.id);
+            const check = await deleteTimeLog(log.id);
+            if (!check.editable) {
+              Alert.alert('삭제할 수 없어요', LOCKED_MESSAGE);
+              return;
+            }
             if (editingId === log.id) resetForm();
           } catch (e) {
             console.error('[TimeLogModal] deleteTimeLog', e);
@@ -156,22 +172,29 @@ export default function TimeLogModal() {
           {recentLogs.length === 0 ? (
             <Text style={styles.emptyListText}>최근 3일간 기록이 없어요</Text>
           ) : (
-            recentLogs.map((log) => (
-              <View key={log.id} style={[styles.logItem, editingId === log.id && styles.logItemActive]}>
-                <Pressable style={styles.logItemBody} onPress={() => handleSelectLog(log)}>
-                  <Text style={styles.logTitle} numberOfLines={1}>{log.title}</Text>
-                  <Text style={styles.logMeta}>{log.date} · {minutesToHours(log.minutes)}시간</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.deleteButton}
-                  onPress={() => handleDeleteLog(log)}
-                  disabled={deletingId === log.id}
-                  hitSlop={8}
-                >
-                  <TrashIcon color={COLORS.danger} size={16} />
-                </Pressable>
-              </View>
-            ))
+            recentLogs.map((log) => {
+              const editable = checkDateEdit(log.date, localDateStr()).editable;
+              return (
+                <View key={log.id} style={[styles.logItem, editingId === log.id && styles.logItemActive, !editable && styles.logItemLocked]}>
+                  <Pressable style={styles.logItemBody} onPress={() => handleSelectLog(log)}>
+                    <Text style={styles.logTitle} numberOfLines={1}>{log.title}</Text>
+                    <Text style={styles.logMeta}>{log.date} · {minutesToHours(log.minutes)}시간</Text>
+                  </Pressable>
+                  {editable ? (
+                    <Pressable
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteLog(log)}
+                      disabled={deletingId === log.id}
+                      hitSlop={8}
+                    >
+                      <TrashIcon color={COLORS.danger} size={16} />
+                    </Pressable>
+                  ) : (
+                    <Text style={styles.lockedTag}>확정됨</Text>
+                  )}
+                </View>
+              );
+            })
           )}
         </ScrollView>
       </KeyboardAvoidingView>
@@ -182,6 +205,8 @@ export default function TimeLogModal() {
 const styles = StyleSheet.create({
   sheet: { flex: 1, backgroundColor: COLORS.white, padding: SPACING.xl },
   flex1: { flex: 1 },
+  logItemLocked: { backgroundColor: COLORS.pastWash },
+  lockedTag: { fontSize: FONT.size.xs, color: COLORS.textMuted, fontWeight: FONT.weight.bold },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

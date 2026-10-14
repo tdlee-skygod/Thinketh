@@ -36,6 +36,18 @@ export interface TimeLog {
   updatedAt: string;
 }
 
+// 비용 기간 검증 결과 (D-239) — 화면이 그대로 안내 문구로 쓴다
+export interface RateIssue {
+  kind: 'inverted' | 'overlap' | 'gap';
+  message: string;
+}
+
+// 수정 가능 여부 판정 결과 (D-250) — 화면이 읽기 전용 안내에 사용
+export interface EditCheck {
+  editable: boolean;
+  reason: 'past_date' | 'past_period' | 'past_settings' | null;
+}
+
 // DB 열기 결과 (D-253)
 export type DbOpenResult =
   | { ok: true }

@@ -102,6 +102,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="modal/time-log" options={{ presentation: 'modal' }} />
             <Stack.Screen name="modal/time-settings" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="modal/rate-period" options={{ presentation: 'modal' }} />
             <Stack.Screen name="modal/pin-change" options={{ presentation: 'modal' }} />
           </Stack>
         </DbGate>

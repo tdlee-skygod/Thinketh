@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useTimeStore } from '@/store/useTimeStore';
+import { useRateStore } from '@/store/useRateStore';
 import { AppHeader } from '@/components/ui/AppHeader';
 import { EditIcon } from '@/components/ui/icons';
 import { localDateStr, diffDays, kstMsSinceMidnight, hhmmToMs } from '@/lib/date';
 import { computeLiveWastedHours } from '@/lib/timeTicker';
+import { computePastTotals, computeRemaining, daySettingsOn, moneyOf, overallRange, rateOn } from '@/lib/rates';
 import { COLORS, SPACING, RADIUS, FONT } from '@/constants/theme';
 
 // 금액이 커서 카드 영역을 벗어나면 백만/억 단위로 줄여 표기한다.
@@ -92,25 +94,29 @@ function SectionHead({ label, hint, dotColor, titleColor }: { label: string; hin
 
 export default function TimeScreen() {
   const router = useRouter();
-  const settings = useTimeStore((s) => s.settings);
-  const todayMinutes = useTimeStore((s) => s.todayMinutes);
-  const pastMinutes = useTimeStore((s) => s.pastMinutes);
-  // 저장은 분(정수), 계산·표시는 시간 — D-239
-  const todayHours = todayMinutes / 60;
-  const pastHours = pastMinutes / 60;
-  const fetchTimeSettings = useTimeStore((s) => s.fetchTimeSettings);
-  const fetchTimeSummary = useTimeStore((s) => s.fetchTimeSummary);
+  const periods = useRateStore((s) => s.periods);
+  const fetchPeriods = useRateStore((s) => s.fetchPeriods);
+  const daySettings = useTimeStore((s) => s.daySettings);
+  const dailyMinutes = useTimeStore((s) => s.dailyMinutes);
+  const fetchDaySettings = useTimeStore((s) => s.fetchDaySettings);
+  const fetchSummary = useTimeStore((s) => s.fetchSummary);
 
   const [nowMs, setNowMs] = useState(() => kstMsSinceMidnight());
   const [today, setToday] = useState(() => localDateStr());
 
   useEffect(() => {
-    fetchTimeSettings();
-  }, [fetchTimeSettings]);
+    fetchPeriods();
+    fetchDaySettings();
+    fetchSummary();
+  }, [fetchPeriods, fetchDaySettings, fetchSummary, today]);
 
-  useEffect(() => {
-    if (settings) fetchTimeSummary();
-  }, [settings, fetchTimeSummary, today]);
+  // 날짜별 단가·가용시간을 쓰는 합산은 입력이 바뀔 때만 다시 계산한다(1초 틱마다 재계산하지 않는다)
+  const range = useMemo(() => overallRange(periods), [periods]);
+  const pastTotals = useMemo(
+    () => computePastTotals(periods, daySettings, dailyMinutes, today),
+    [periods, daySettings, dailyMinutes, today]
+  );
+  const remaining = useMemo(() => computeRemaining(periods, daySettings, today), [periods, daySettings, today]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -127,7 +133,7 @@ export default function TimeScreen() {
     <View style={styles.container}>
       <AppHeader />
 
-      {!settings ? (
+      {!range ? (
         <View style={styles.emptyWrap}>
           <Text style={styles.emptyText}>설정에서 나의 시간을 등록해주세요</Text>
           <Pressable style={styles.emptyButton} onPress={() => router.push('/(tabs)/settings')}>
@@ -136,31 +142,41 @@ export default function TimeScreen() {
         </View>
       ) : (
         (() => {
-          const availableHours = settings.availableHoursPerDay;
-          const remainingDays = diffDays(today, settings.endDate);
-          const pastDays = diffDays(settings.startDate, today);
+          const ds = daySettingsOn(daySettings, today);
+          const availableHours = ds.availableHoursPerDay;
+          const todayMinutes = dailyMinutes[today] ?? 0;
+          const todayHours = todayMinutes / 60;
+          const todayRate = rateOn(periods, today);
+          const remainingDays = remaining.days;
+          const pastDays = pastTotals.days;
 
           const { wastedHours: todayWastedHours } = computeLiveWastedHours({
             nowMs,
-            activeStartMs: hhmmToMs(settings.activeStartTime),
-            activeEndMs: hhmmToMs(settings.activeEndTime),
+            activeStartMs: hhmmToMs(ds.activeStartTime),
+            activeEndMs: hhmmToMs(ds.activeEndTime),
             availableHours,
             todayHours,
           });
-          const pastOnlyHours = pastHours - todayHours;
-          const pastWastedHours = pastDays * availableHours - pastOnlyHours;
+          const pastOnlyHours = pastTotals.myMinutes / 60;
+          const pastWastedHours = pastTotals.wastedMinutes / 60;
 
-          const remainingMoney = remainingDays * availableHours * settings.hourlyRate;
-          const todayWastedMoney = todayWastedHours * settings.hourlyRate;
-          const todayMyMoney = todayHours * settings.hourlyRate;
-          const pastWastedMoney = pastWastedHours * settings.hourlyRate;
-          const pastMyMoney = pastOnlyHours * settings.hourlyRate;
+          const remainingMoney = remaining.amount;
+          const todayWastedMoney = todayWastedHours * todayRate;
+          const todayMyMoney = moneyOf(periods, today, todayMinutes);
+          const pastWastedMoney = pastTotals.wastedAmount;
+          const pastMyMoney = pastTotals.myAmount;
+          const expired = today > range.end;
 
           const totalSpan = pastDays + remainingDays;
           const progressPct = totalSpan > 0 ? Math.min(100, Math.max(0, (pastDays / totalSpan) * 100)) : 0;
 
           return (
             <View style={styles.blocksWrap}>
+              {expired && (
+                <Pressable style={styles.expiredBanner} onPress={() => router.push('/modal/time-settings')}>
+                  <Text style={styles.expiredText}>마지막 비용 기간이 끝났어요. 새 기간을 추가해주세요 ›</Text>
+                </Pressable>
+              )}
               {/* 남은 — 진행 현황 */}
               <View style={[styles.block, styles.blockRemain]}>
                 <SectionHead
@@ -206,7 +222,7 @@ export default function TimeScreen() {
               <View style={[styles.block, styles.blockToday]}>
                 <SectionHead
                   label="오늘"
-                  hint={`가용 ${availableHours}시간 · ${settings.activeStartTime}~${settings.activeEndTime}`}
+                  hint={`가용 ${availableHours}시간 · ${ds.activeStartTime}~${ds.activeEndTime}`}
                   dotColor={COLORS.accentLavender}
                   titleColor={COLORS.textMuted}
                 />
@@ -318,6 +334,14 @@ export default function TimeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bgLighter },
+
+  expiredBanner: {
+    backgroundColor: COLORS.wasteWash,
+    borderRadius: RADIUS.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+  },
+  expiredText: { color: COLORS.waste, fontSize: FONT.size.md, fontWeight: FONT.weight.semibold },
 
   blocksWrap: {
     paddingHorizontal: SPACING.lg,

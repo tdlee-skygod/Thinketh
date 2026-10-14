@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView, Switch, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTimeStore } from '@/store/useTimeStore';
+import { useRateStore } from '@/store/useRateStore';
+import { localDateStr } from '@/lib/date';
+import { rateOn } from '@/lib/rates';
 import { hasDeviceLock, isBiometricAvailable, useLockStore } from '@/store/useLockStore';
 import { AppHeader } from '@/components/ui/AppHeader';
 import { COLORS, SPACING, RADIUS, FONT } from '@/constants/theme';
@@ -14,8 +17,8 @@ const LOCK_TIMEOUT_OPTIONS = [
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const timeSettings = useTimeStore((s) => s.settings);
-  const fetchTimeSettings = useTimeStore((s) => s.fetchTimeSettings);
+  const periods = useRateStore((s) => s.periods);
+  const fetchPeriods = useRateStore((s) => s.fetchPeriods);
   const biometricEnabled = useLockStore((s) => s.biometricEnabled);
   const lockTimeoutSec = useLockStore((s) => s.lockTimeoutSec);
   const setBiometricEnabled = useLockStore((s) => s.setBiometricEnabled);
@@ -34,8 +37,8 @@ export default function SettingsScreen() {
   };
 
   useEffect(() => {
-    fetchTimeSettings();
-  }, [fetchTimeSettings]);
+    fetchPeriods();
+  }, [fetchPeriods]);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -86,9 +89,9 @@ export default function SettingsScreen() {
           <View style={styles.flex1}>
             <Text style={styles.label}>나의 시간</Text>
             <Text style={styles.sub}>
-              {timeSettings
-                ? `${timeSettings.startDate} ~ ${timeSettings.endDate} · 시간당 ${timeSettings.hourlyRate.toLocaleString()}원`
-                : '시작일자, 완료일자, 시간당 금액을 등록해주세요'}
+              {periods.length > 0
+                ? `비용 기간 ${periods.length}개 · 오늘 시간당 ${rateOn(periods, localDateStr()).toLocaleString()}원`
+                : '비용 기간과 시간당 금액을 등록해주세요'}
             </Text>
           </View>
           <Text style={styles.chevron}>›</Text>

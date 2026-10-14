@@ -1,19 +1,15 @@
 import { create } from 'zustand';
 import { randomUUID } from 'expo-crypto';
-import { dbAll, dbGet, dbRun, dbTransaction } from '@/lib/localDb';
+import { dbAll, dbGet, dbRun } from '@/lib/localDb';
 import { localDateStr, shiftDateStr } from '@/lib/date';
-import type { TimeSettings, TimeLog } from '@/types';
+import { checkDateEdit, daySettingsOn } from '@/lib/rates';
+import type { DaySettings, EditCheck, TimeLog } from '@/types';
 
 const RECENT_LOG_DAYS = 3;
 const FIRST_DAY_SETTINGS = '0001-01-01';
 
-interface RatePeriodRow {
-  start_date: string;
-  end_date: string;
-  hourly_rate: number;
-}
-
 interface DaySettingsRow {
+  effective_from: string;
   available_hours_per_day: number;
   active_start_time: string;
   active_end_time: string;
@@ -29,6 +25,15 @@ interface TimeLogRow {
   updated_at: string;
 }
 
+function mapDaySettings(row: DaySettingsRow): DaySettings {
+  return {
+    effectiveFrom: row.effective_from,
+    availableHoursPerDay: row.available_hours_per_day,
+    activeStartTime: row.active_start_time,
+    activeEndTime: row.active_end_time,
+  };
+}
+
 function mapTimeLog(row: TimeLogRow): TimeLog {
   return {
     id: row.id,
@@ -41,107 +46,89 @@ function mapTimeLog(row: TimeLogRow): TimeLog {
   };
 }
 
+const EDITABLE: EditCheck = { editable: true, reason: null };
+
 interface TimeState {
-  settings: TimeSettings | null;
-  todayMinutes: number;  // 오늘 나의 시간 합계(분)
-  pastMinutes: number;   // 시작일~오늘 나의 시간 누적 합계(분, 오늘 포함)
-  recentLogs: TimeLog[]; // 최근 3일 기록 (date desc, 같은 날짜 안에서는 최신순)
+  daySettings: DaySettings[];                // effective_from 오름차순 — daySettingsOn(날짜별 적용값)의 입력
+  dailyMinutes: Record<string, number>;      // 날짜 → 나의 시간 합계(분)
+  recentLogs: TimeLog[];                     // 최근 3일 기록 (date desc, 같은 날짜 안에서는 최신순)
   isLoading: boolean;
-  fetchTimeSettings: () => Promise<TimeSettings | null>;
-  saveTimeSettings: (
-    startDate: string,
-    endDate: string,
-    hourlyRate: number,
-    availableHoursPerDay: number,
-    activeStartTime: string,
-    activeEndTime: string
-  ) => Promise<void>;
-  fetchTimeSummary: () => Promise<void>;
+  fetchDaySettings: () => Promise<void>;
+  // 가용시간·활동 시간대 저장. 기록·기간이 아직 없으면 바로 적용('immediate'), 있으면 내일부터 적용('tomorrow') — D-250
+  saveDaySettings: (patch: Partial<Omit<DaySettings, 'effectiveFrom'>>) => Promise<'immediate' | 'tomorrow'>;
+  fetchSummary: () => Promise<void>;
   fetchRecentLogs: () => Promise<void>;
   addTimeLog: (title: string, content: string, minutes: number) => Promise<void>;
-  updateTimeLog: (id: string, title: string, content: string, minutes: number) => Promise<void>;
-  deleteTimeLog: (id: string) => Promise<void>;
+  // 오늘 기록만 수정·삭제할 수 있다(D-250). 지난 날 기록이면 저장하지 않고 사유를 돌려준다
+  updateTimeLog: (id: string, title: string, content: string, minutes: number) => Promise<EditCheck>;
+  deleteTimeLog: (id: string) => Promise<EditCheck>;
+}
+
+async function checkLogEditable(id: string): Promise<EditCheck | 'missing'> {
+  const row = await dbGet<{ date: string }>('select date from time_logs where id = ?', [id]);
+  if (!row) return 'missing';
+  return checkDateEdit(row.date, localDateStr());
 }
 
 export const useTimeStore = create<TimeState>((set, get) => ({
-  settings: null,
-  todayMinutes: 0,
-  pastMinutes: 0,
+  daySettings: [],
+  dailyMinutes: {},
   recentLogs: [],
   isLoading: false,
 
-  fetchTimeSettings: async () => {
-    set({ isLoading: true });
+  fetchDaySettings: async () => {
     try {
-      const today = localDateStr();
-      // 단계 0: 비용 기간은 1개만 쓴다(첫 기간). 다중 기간은 단계 1에서 확장
-      const period = await dbGet<RatePeriodRow>(
-        'select start_date, end_date, hourly_rate from rate_periods order by start_date limit 1'
-      );
-      const day = await dbGet<DaySettingsRow>(
-        'select available_hours_per_day, active_start_time, active_end_time from day_settings where effective_from <= ? order by effective_from desc limit 1',
-        [today]
-      );
-
-      const mapped: TimeSettings | null =
-        period && day
-          ? {
-              startDate: period.start_date,
-              endDate: period.end_date,
-              hourlyRate: period.hourly_rate,
-              availableHoursPerDay: day.available_hours_per_day,
-              activeStartTime: day.active_start_time,
-              activeEndTime: day.active_end_time,
-            }
-          : null;
-      set({ settings: mapped });
-      return mapped;
+      const rows = await dbAll<DaySettingsRow>('select * from day_settings order by effective_from');
+      set({ daySettings: rows.map(mapDaySettings) });
     } catch (e) {
-      console.error('[useTimeStore] fetchTimeSettings', e instanceof Error ? e.message : 'error');
-      return null;
-    } finally {
-      set({ isLoading: false });
+      console.error('[useTimeStore] fetchDaySettings', e instanceof Error ? e.message : 'error');
     }
   },
 
-  saveTimeSettings: async (startDate, endDate, hourlyRate, availableHoursPerDay, activeStartTime, activeEndTime) => {
-    // 단계 0의 임시 동작: 비용 기간 1개를 통째로 바꾸고 최초 day_settings 행을 덮어쓴다.
-    // 과거 날짜 보호·"내일부터 적용"(D-250)은 단계 1에서 구현한다.
-    await dbTransaction(async () => {
-      await dbRun('delete from rate_periods');
-      await dbRun('insert into rate_periods (id, start_date, end_date, hourly_rate) values (?, ?, ?, ?)', [
-        randomUUID(),
-        startDate,
-        endDate,
-        hourlyRate,
-      ]);
+  saveDaySettings: async (patch) => {
+    const today = localDateStr();
+    const tomorrow = shiftDateStr(today, 1);
+
+    const periodCount = await dbGet<{ n: number }>('select count(*) as n from rate_periods');
+    const logCount = await dbGet<{ n: number }>('select count(*) as n from time_logs');
+    const hasHistory = (periodCount?.n ?? 0) > 0 || (logCount?.n ?? 0) > 0;
+
+    if (!hasHistory) {
+      // 첫 설정: 바꿀 과거가 없으므로 최초 행을 바로 수정한다
+      const base = daySettingsOn(get().daySettings, FIRST_DAY_SETTINGS);
+      const next = { ...base, ...patch };
       await dbRun(
         'update day_settings set available_hours_per_day = ?, active_start_time = ?, active_end_time = ? where effective_from = ?',
-        [availableHoursPerDay, activeStartTime, activeEndTime, FIRST_DAY_SETTINGS]
+        [next.availableHoursPerDay, next.activeStartTime, next.activeEndTime, FIRST_DAY_SETTINGS]
       );
-    });
-
-    await get().fetchTimeSettings();
-    await get().fetchTimeSummary();
-  },
-
-  fetchTimeSummary: async () => {
-    const settings = get().settings;
-    if (!settings) {
-      set({ todayMinutes: 0, pastMinutes: 0 });
-      return;
+      await get().fetchDaySettings();
+      return 'immediate';
     }
 
+    // 이후 변경: 내일 시작 행을 upsert한다. 오늘 이하의 행은 건드리지 않는다
+    const base = daySettingsOn(get().daySettings, tomorrow);
+    const next = { ...base, ...patch };
+    await dbRun(
+      `insert into day_settings (effective_from, available_hours_per_day, active_start_time, active_end_time)
+       values (?, ?, ?, ?)
+       on conflict(effective_from) do update set
+         available_hours_per_day = excluded.available_hours_per_day,
+         active_start_time = excluded.active_start_time,
+         active_end_time = excluded.active_end_time`,
+      [tomorrow, next.availableHoursPerDay, next.activeStartTime, next.activeEndTime]
+    );
+    await get().fetchDaySettings();
+    return 'tomorrow';
+  },
+
+  fetchSummary: async () => {
     try {
-      const today = localDateStr();
-      const past = await dbGet<{ m: number | null }>(
-        'select sum(minutes) as m from time_logs where date >= ? and date <= ?',
-        [settings.startDate, today]
-      );
-      const todaySum = await dbGet<{ m: number | null }>('select sum(minutes) as m from time_logs where date = ?', [today]);
-      set({ pastMinutes: past?.m ?? 0, todayMinutes: todaySum?.m ?? 0 });
+      const rows = await dbAll<{ date: string; m: number }>('select date, sum(minutes) as m from time_logs group by date');
+      const map: Record<string, number> = {};
+      for (const r of rows) map[r.date] = r.m;
+      set({ dailyMinutes: map });
     } catch (e) {
-      console.error('[useTimeStore] fetchTimeSummary', e instanceof Error ? e.message : 'error');
+      console.error('[useTimeStore] fetchSummary', e instanceof Error ? e.message : 'error');
     }
   },
 
@@ -164,11 +151,15 @@ export const useTimeStore = create<TimeState>((set, get) => ({
       'insert into time_logs (id, date, title, content, minutes, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)',
       [randomUUID(), localDateStr(), title, content, minutes, now, now]
     );
-    await get().fetchTimeSummary();
+    await get().fetchSummary();
     await get().fetchRecentLogs();
   },
 
   updateTimeLog: async (id, title, content, minutes) => {
+    const check = await checkLogEditable(id);
+    if (check === 'missing') return EDITABLE;
+    if (!check.editable) return check;
+
     await dbRun('update time_logs set title = ?, content = ?, minutes = ?, updated_at = ? where id = ?', [
       title,
       content,
@@ -176,13 +167,19 @@ export const useTimeStore = create<TimeState>((set, get) => ({
       new Date().toISOString(),
       id,
     ]);
-    await get().fetchTimeSummary();
+    await get().fetchSummary();
     await get().fetchRecentLogs();
+    return EDITABLE;
   },
 
   deleteTimeLog: async (id) => {
+    const check = await checkLogEditable(id);
+    if (check === 'missing') return EDITABLE;
+    if (!check.editable) return check;
+
     await dbRun('delete from time_logs where id = ?', [id]);
-    await get().fetchTimeSummary();
+    await get().fetchSummary();
     await get().fetchRecentLogs();
+    return EDITABLE;
   },
 }));
