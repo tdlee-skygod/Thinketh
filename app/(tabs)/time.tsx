@@ -93,8 +93,11 @@ function SectionHead({ label, hint, dotColor, titleColor }: { label: string; hin
 export default function TimeScreen() {
   const router = useRouter();
   const settings = useTimeStore((s) => s.settings);
-  const todayHours = useTimeStore((s) => s.todayHours);
-  const pastHours = useTimeStore((s) => s.pastHours);
+  const todayMinutes = useTimeStore((s) => s.todayMinutes);
+  const pastMinutes = useTimeStore((s) => s.pastMinutes);
+  // 저장은 분(정수), 계산·표시는 시간 — D-239
+  const todayHours = todayMinutes / 60;
+  const pastHours = pastMinutes / 60;
   const fetchTimeSettings = useTimeStore((s) => s.fetchTimeSettings);
   const fetchTimeSummary = useTimeStore((s) => s.fetchTimeSummary);
 

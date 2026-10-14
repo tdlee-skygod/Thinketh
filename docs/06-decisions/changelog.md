@@ -24,6 +24,27 @@
 
 ---
 
+## 단계 0 — 조각 2: 로컬 DB 신설·Supabase 삭제 — 2026.10.14
+
+> 코드 변경만 했고 빌드·실기기 확인은 하지 않았다(새 네이티브 모듈이 있어 개발용 빌드가 필요). 네이티브 반영은 빌드 때 `npx expo prebuild`(`--clean` 없이) 후 `git diff`로 검토한다.
+
+### 추가 (feat)
+- `lib/localDb.ts`: SQLCipher raw 키 DB 열기, 순차 마이그레이션(v1), 새 버전 DB 가드, 파라미터 바인딩 헬퍼, 직렬 트랜잭션. 열기 실패 시 파일을 지우지 않고 `DbOpenResult` 반환
+- `lib/secure.ts`: 무작위 256비트 DB 키 생성·조회(SecureStore)
+- 의존성 `expo-sqlite`, `expo-secure-store`, `expo-crypto`, `app.json` 플러그인, `android/gradle.properties`의 `expo.sqlite.useSQLCipher=true`
+
+### 수정 (refactor)
+- `store/useTimeStore.ts`를 로컬 DB 기반으로 재작성(같은 화면 인터페이스, 시간은 분 단위 저장). 비용 기간·`day_settings`를 나눠 저장하되 단계 0은 임시로 기간 1개·최초 행 덮어쓰기
+- `app/_layout.tsx`: 폰트 로딩 + DB 열기, 실패 시 안내 문구(복구 화면은 조각 3). `(tabs)/_layout.tsx`·`settings.tsx`: 로그인·프로필 카드·로그아웃 제거
+- `time.tsx`, `time-log.tsx`: 분↔시간 변환만. `types/index.ts`: `userId`·`Profile` 제거, `TimeLog.minutes`, `RatePeriod`·`DaySettings`·`DbOpenResult` 추가
+- `AndroidManifest.xml`: `allowBackup="false"` (D-236)
+
+### 삭제 (remove)
+- `lib/supabase.ts`, `store/useAuthStore.ts`, `app/(auth)/` 3개, `.env`·`.env.example`, 의존성 `@supabase/supabase-js`·`@react-native-async-storage/async-storage`
+
+### 확인
+- `npx tsc --noEmit` 통과
+
 ## 단계 0 — 조각 1: 목표 탭·음성 입력 제거 — 2026.10.14
 
 > 단계 0은 4개 조각으로 진행한다: ① 목표·음성 제거(이번) ② 로컬 DB·`useTimeStore` 교체 + Supabase·로그인 삭제 ③ 앱 잠금·시작 순서·DB 복구 화면 ④ 설정 정리·점검. `useTimeStore`가 Supabase·`useAuthStore`에 묶여 있어 Supabase·로그인 삭제는 ②에서 함께 한다.

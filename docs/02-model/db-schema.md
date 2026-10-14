@@ -12,6 +12,15 @@
 - 테이블 이름에 접두사를 쓰지 않는다.
 - **지난 날짜의 행은 수정하지 않는다**(D-250). 이 제약은 DB 트리거가 아니라 store·`lib/`의 수정 가능 여부 판정으로 강제한다.
 
+## 마이그레이션 진행 상태
+
+| 버전 | 단계 | 내용 | 상태 |
+|---|---|---|---|
+| 1 | 0 | `schema_version`, `day_settings`(가용시간·활동 시간대만), `rate_periods`, `time_logs`(태그 없음) | ✅ 코드 반영(`lib/localDb.ts`, 빌드 검증 전) |
+| 이후 | 1~7 | `settings`, `day_settings`의 일일 목표·스트릭 기준 컬럼, `day_closings`, `tags`·`time_logs.tag_id`, `timer`, `rewards`, `reflections`, `notify_prefs` — 필요한 단계의 마이그레이션에서 추가 | 📝 |
+
+아래 DDL은 모든 단계가 끝났을 때의 최종 형태다.
+
 ## 테이블 DDL
 
 ```sql

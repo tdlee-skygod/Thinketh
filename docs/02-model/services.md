@@ -3,7 +3,7 @@
 > v2(D-234): 외부 서버를 쓰지 않는다. 아래는 기기 안의 서비스 모듈이며 `lib/`에 둔다. 표기: 📝 계획(코드 미반영).
 > 레이어 규칙: `lib/`는 store를 import하지 않는다. 화면은 이 모듈을 직접 부르지 않고 store를 거친다(D-001).
 
-## 로컬 DB (`lib/localDb.ts`) 📝
+## 로컬 DB (`lib/localDb.ts`) ✅ 단계 0 조각 2 (빌드 검증 전)
 
 - `expo-sqlite`를 SQLCipher 옵션으로 연다(D-236). 키는 문자열 암호가 아니라 **raw 키**(`PRAGMA key = "x'<hex>'"`)로 지정해 키 유도 지연을 없앤다. 앱 시작 시 `openDb()`가 SecureStore에서 키를 읽어 `PRAGMA key`로 연 뒤 `schema_version`을 보고 순차 마이그레이션을 실행한다.
 - 열기 직후 `schema_version`이 앱이 아는 최대 버전보다 크면 DB를 더 열지 않고 "앱을 업데이트해 주세요"를 안내한다(다운그레이드 가드, D-236).
@@ -15,7 +15,7 @@
 - 순수 함수 `buildClosing(date, logs, daySettings, ratePeriods)`가 그날의 `DayClosing`을 만든다(logic.md § 10). 입력이 같으면 언제 실행해도 결과가 같다.
 - 실행은 `useTimeStore.closePastDays()`가 앱 시작·포그라운드 복귀·자정 롤오버 때 호출하고, 확정 행이 없는 지난 날짜를 오래된 순으로 모두 저장한다(D-251). 정시 백그라운드 실행은 쓰지 않는다.
 
-## 보안 저장소 (`lib/secure.ts`) 📝
+## 보안 저장소 (`lib/secure.ts`) ✅ DB 키 부분 / 📝 PIN 부분(조각 3)
 
 | 키 | 내용 |
 |---|---|

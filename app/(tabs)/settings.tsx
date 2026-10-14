@@ -1,16 +1,12 @@
 import { useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useAuthStore } from '@/store/useAuthStore';
 import { useTimeStore } from '@/store/useTimeStore';
 import { AppHeader } from '@/components/ui/AppHeader';
-import { Button } from '@/components/ui/Button';
 import { COLORS, SPACING, RADIUS, FONT } from '@/constants/theme';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const profile = useAuthStore((s) => s.profile);
-  const signOut = useAuthStore((s) => s.signOut);
   const timeSettings = useTimeStore((s) => s.settings);
   const fetchTimeSettings = useTimeStore((s) => s.fetchTimeSettings);
 
@@ -21,16 +17,6 @@ export default function SettingsScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <AppHeader />
-
-      <View style={styles.profileCard}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{(profile?.displayName || profile?.email || '?').charAt(0)}</Text>
-        </View>
-        <View style={styles.profileInfo}>
-          <Text style={styles.profileName}>{profile?.displayName || profile?.email}</Text>
-          <Text style={styles.profileEmail}>{profile?.email}</Text>
-        </View>
-      </View>
 
       <Text style={styles.groupTitle}>Time</Text>
       <View style={styles.card}>
@@ -47,10 +33,6 @@ export default function SettingsScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.logoutRow}>
-        <Button title="로그아웃" variant="ghost" onPress={signOut} />
-      </View>
-
     </ScrollView>
   );
 }
@@ -58,27 +40,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bgLighter },
   content: { paddingBottom: SPACING.xxl },
-  profileCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    margin: SPACING.lg,
-    backgroundColor: COLORS.primaryDark,
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { color: COLORS.white, fontSize: FONT.size.xl, fontWeight: FONT.weight.extrabold },
-  profileInfo: { flex: 1 },
-  profileName: { color: COLORS.white, fontSize: FONT.size.lg, fontWeight: FONT.weight.bold },
-  profileEmail: { color: 'rgba(255,255,255,0.6)', fontSize: FONT.size.xs, marginTop: 2 },
   groupTitle: {
     fontSize: FONT.size.xs,
     color: COLORS.accentLavender,
@@ -102,5 +63,4 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   linkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   chevron: { fontSize: FONT.size.xl, color: COLORS.textMuted },
-  logoutRow: { margin: SPACING.lg },
 });

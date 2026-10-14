@@ -9,6 +9,11 @@ import { TrashIcon } from '@/components/ui/icons';
 import { COLORS, SPACING, RADIUS, FONT } from '@/constants/theme';
 import type { TimeLog } from '@/types';
 
+// 저장은 분(정수), 화면은 시간(소수 2자리) — D-239
+function minutesToHours(minutes: number): number {
+  return Math.round((minutes / 60) * 100) / 100;
+}
+
 export default function TimeLogModal() {
   const router = useRouter();
   const recentLogs = useTimeStore((s) => s.recentLogs);
@@ -32,7 +37,7 @@ export default function TimeLogModal() {
     setEditingId(log.id);
     setTitle(log.title);
     setContent(log.content);
-    setHoursText(String(log.hours));
+    setHoursText(String(minutesToHours(log.minutes)));
   };
 
   const resetForm = () => {
@@ -48,7 +53,8 @@ export default function TimeLogModal() {
       Alert.alert('입력 확인', '제목을 입력해주세요.');
       return;
     }
-    if (!hoursText || Number.isNaN(hours) || hours <= 0) {
+    const minutes = Math.round(hours * 60);
+    if (!hoursText || Number.isNaN(hours) || minutes < 1) {
       Alert.alert('입력 확인', '시간을 0보다 큰 숫자로 입력해주세요.');
       return;
     }
@@ -56,9 +62,9 @@ export default function TimeLogModal() {
     setIsSubmitting(true);
     try {
       if (editingId) {
-        await updateTimeLog(editingId, title.trim(), content.trim(), hours);
+        await updateTimeLog(editingId, title.trim(), content.trim(), minutes);
       } else {
-        await addTimeLog(title.trim(), content.trim(), hours);
+        await addTimeLog(title.trim(), content.trim(), minutes);
       }
       router.back();
     } catch (e) {
@@ -154,7 +160,7 @@ export default function TimeLogModal() {
               <View key={log.id} style={[styles.logItem, editingId === log.id && styles.logItemActive]}>
                 <Pressable style={styles.logItemBody} onPress={() => handleSelectLog(log)}>
                   <Text style={styles.logTitle} numberOfLines={1}>{log.title}</Text>
-                  <Text style={styles.logMeta}>{log.date} · {log.hours}시간</Text>
+                  <Text style={styles.logMeta}>{log.date} · {minutesToHours(log.minutes)}시간</Text>
                 </Pressable>
                 <Pressable
                   style={styles.deleteButton}

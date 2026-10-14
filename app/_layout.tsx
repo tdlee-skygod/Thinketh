@@ -1,30 +1,46 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import { useAuthStore } from '@/store/useAuthStore';
-import { COLORS } from '@/constants/theme';
+import { openDb } from '@/lib/localDb';
+import { COLORS, SPACING, FONT } from '@/constants/theme';
+import type { DbOpenResult } from '@/types';
 
 export default function RootLayout() {
-  const init = useAuthStore((s) => s.init);
-  const isInitialized = useAuthStore((s) => s.isInitialized);
+  const [dbResult, setDbResult] = useState<DbOpenResult | null>(null);
   const [fontsLoaded] = useFonts({
     'DSEG7Classic-Regular': require('../assets/fonts/DSEG7Classic-Regular.ttf'),
     'DSEG7Classic-Bold': require('../assets/fonts/DSEG7Classic-Bold.ttf'),
   });
 
   useEffect(() => {
-    init();
-  }, [init]);
+    openDb().then(setDbResult);
+  }, []);
 
-  if (!isInitialized || !fontsLoaded) {
+  if (!dbResult || !fontsLoaded) {
     return (
       <SafeAreaProvider>
         <StatusBar style="dark" />
         <View style={styles.loading}>
           <ActivityIndicator color={COLORS.primary} size="large" />
+        </View>
+      </SafeAreaProvider>
+    );
+  }
+
+  // 복구 화면(백업에서 가져오기/새로 시작)은 단계 0 조각 3에서 만든다. 지금은 원인만 안내하고 DB는 건드리지 않는다.
+  if (!dbResult.ok) {
+    return (
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <View style={styles.loading}>
+          <Text style={styles.errorText}>
+            {dbResult.reason === 'newer_version'
+              ? '앱을 최신 버전으로 업데이트해 주세요.'
+              : '저장된 데이터를 열 수 없습니다.'}
+          </Text>
         </View>
       </SafeAreaProvider>
     );
@@ -47,5 +63,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.bgLighter,
+    padding: SPACING.lg,
   },
+  errorText: { color: COLORS.textDark, fontSize: FONT.size.md, textAlign: 'center' },
 });

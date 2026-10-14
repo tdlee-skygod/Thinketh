@@ -33,7 +33,9 @@
           "backgroundColor": "#1e1b4b"
         }
       ],
-      "expo-font"
+      "expo-font",
+      ["expo-sqlite", { "useSQLCipher": true }],
+      "expo-secure-store"
     ]
   }
 }

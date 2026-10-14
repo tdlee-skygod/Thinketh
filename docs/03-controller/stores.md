@@ -38,7 +38,11 @@ interface RateState {
 
 `validate`/`autoAdjustAfterEdit`는 `lib/rates.ts`의 순수 함수를 감싼다. 기간이 하나도 없으면 Time 탭은 "비용 기간 등록" 빈 상태가 된다. 중간 기간 삭제는 이웃 기간을 늘려 메우는 경우에만 허용한다.
 
-## useTimeStore 📝 (Time 탭, F-21)
+## useTimeStore (Time 탭, F-21)
+
+> ✅ 단계 0(조각 2) 구현은 아래 최종 인터페이스의 부분집합이다: `settings`는 `TimeSettings`(비용 기간 1개 + 최초 `day_settings` 행의 합성 뷰), 합계는 `todayMinutes`/`pastMinutes`(분), `saveTimeSettings(start, end, rate, 가용시간, 활동 시작, 활동 종료)`가 임시로 최초 행을 덮어쓴다. 기록 API는 분(minutes) 단위다. 최종 형태는 단계 1·2에서 맞춘다.
+
+## useTimeStore 최종 인터페이스 📝
 
 ```typescript
 interface TimeState {
