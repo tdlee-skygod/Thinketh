@@ -24,6 +24,25 @@
 
 ---
 
+## 단계 0 — 조각 4: 테스트 환경·INTERNET 권한·마무리 점검 — 2026.10.14
+
+> 단계 0 완료(코드 기준). 빌드·실기기 확인은 하지 않았다.
+
+### 추가 (feat)
+- jest 환경(`babel-jest` + `babel-preset-expo`), `npm test`, `lib/__tests__/` 테스트 19건(`date`, `timeTicker`, `pin`) 통과. `jest-expo` 프리셋은 현재 RN 버전과 맞지 않아 사용하지 않음. `tsconfig.json`에 jest 타입 추가
+- `android/app/src/release/AndroidManifest.xml`: 릴리즈에서 `INTERNET` 제거(`tools:node="remove"`) — `expo-file-system` 등 라이브러리가 선언한 권한까지 제거
+
+### 수정 (refactor)
+- `INTERNET` 권한을 main 매니페스트에서 debug·debugOptimized로 이동 (D-246)
+- 문서 상태 표기: D-234·D-235·D-236·D-238·D-240(삭제 부분)·D-246·D-247을 ✅로
+
+### 확인
+- `npm test` 19건 통과, `npx tsc --noEmit` 통과, 삭제 대상 코드 참조 0건
+- 빌드 때 확인할 항목: 릴리즈 병합 매니페스트에 `INTERNET`이 없는지, SQLCipher 열기·마이그레이션, PIN 해제 속도, 백그라운드 화면 가림, 생체인증, DB 복구 화면
+
+### 단계 0 요약
+- 조각 1 목표·음성 제거 → 조각 2 로컬 DB·Supabase 삭제 → 조각 3 앱 잠금·복구 화면 → 조각 4 테스트·권한
+
 ## 단계 0 — 조각 3: 앱 잠금·시작 순서·DB 복구 화면 — 2026.10.14
 
 > 코드 변경만 했고 빌드·실기기 확인은 하지 않았다. 빌드 후 확인할 항목: PIN scrypt 해제 속도, 백그라운드 진입 시 화면 가림 타이밍(최근 앱 미리보기), 생체인증, DB 복구 화면.

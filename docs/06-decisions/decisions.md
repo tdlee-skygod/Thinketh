@@ -123,13 +123,13 @@
 - **영향**: `app/(tabs)/settings.tsx`, `AppHeader.tsx`, `(tabs)/_layout.tsx`, `types/index.ts` 등
 - **날짜**: 2026.10.13
 
-### D-234 서버 폐기 — 모든 기능을 휴대폰 안에서만 구현한다 📝
+### D-234 서버 폐기 — 모든 기능을 휴대폰 안에서만 구현한다 ✅ (단계 0, 빌드 검증 전)
 - **결정**: 서버·계정·네트워크 의존을 모두 없앤다. 데이터는 기기의 SQLite 하나(D-236 암호화)에 저장한다. D-001의 "View에서 DB 직접 호출 금지" 원칙은 로컬 DB에도 동일하게 적용한다 — 화면은 store만 호출하고, SQL은 `lib/`(localDb)와 store에서만 실행한다.
 - **이유**: 개발자 결정 — 개인용 앱이라 클라우드 동기화가 불필요하고, 데이터를 타인·서버에 두고 싶지 않음.
 - **영향**: `lib/supabase.ts`, `store/useAuthStore.ts`, `app/(auth)/*`, 의존성 정리, `useTimeStore`(전면 교체), 문서 전반
 - **날짜**: 2026.10.14
 
-### D-235 로그인은 "앱 잠금"으로 대체한다 (6자리 PIN 필수, 생체인증 선택) 📝
+### D-235 로그인은 "앱 잠금"으로 대체한다 (6자리 PIN 필수, 생체인증 선택) ✅ (단계 0, 빌드 검증 전)
 - **결정**: 이메일 로그인/회원가입(F-01)을 없애고 앱 잠금(F-23)으로 대체한다.
   1. 첫 실행 시 6자리 PIN 설정(필수). 생체인증은 선택.
   2. PIN은 **해시+솔트**만 `expo-secure-store`에 저장하고 평문은 저장하지 않는다. 연속 5회 실패하면 대기 시간을 늘린다.
@@ -140,7 +140,7 @@
 - **영향**: `app/lock.tsx`(신규), `store/useLockStore.ts`(신규), `lib/secure.ts`(신규), `app/_layout.tsx`, `settings.tsx`(프로필 카드·로그아웃 → 잠금 설정), `expo-local-authentication`, `expo-secure-store`, `expo-screen-capture`
 - **날짜**: 2026.10.14
 
-### D-236 로컬 DB는 SQLCipher로 암호화하고, 키는 SecureStore에 보관한다. 자동 백업은 끈다 📝
+### D-236 로컬 DB는 SQLCipher로 암호화하고, 키는 SecureStore에 보관한다. 자동 백업은 끈다 ✅ (단계 0, 빌드 검증 전)
 - **결정**: `expo-sqlite`의 SQLCipher 옵션(`useSQLCipher`)으로 DB 파일 전체를 암호화한다. 키는 첫 실행 때 생성한 무작위 256비트 값을 `expo-secure-store`(Android Keystore)에 저장하고, SQLCipher에는 문자열 암호가 아니라 **raw 키 형식**(`PRAGMA key = "x'<hex>'"`)으로 직접 지정한다(키 유도 반복을 건너뛰어 앱 시작이 느려지지 않게 함). `AndroidManifest`의 `allowBackup`을 `false`로 하고 자동 백업 대상에서 제외한다 — 키가 기기에 묶여 있어 백업본을 복원해도 열 수 없으므로, 백업은 D-237의 내보내기/가져오기만 사용한다. 스키마 변경은 `schema_version` 테이블 기반의 순차 마이그레이션으로 관리하며, **앱이 아는 것보다 새로운 `schema_version`의 DB는 열지 않고** "앱을 업데이트해 주세요"를 안내한다(다운그레이드로 인한 손상 방지). DB를 열 수 없을 때의 흐름은 D-253.
 - **이유**: 회고·금액 등 민감 정보를 평문으로 두지 않기 위해(개발자 확인). 앱 데이터 삭제나 재설치 시 키가 사라져 **복구 불가**하다는 점을 설정 화면과 문서에 명시한다.
 - **영향**: `lib/localDb.ts`(신규), `app.json` 플러그인, `AndroidManifest.xml`, 개발용 빌드 필요(Expo Go 불가)
@@ -152,7 +152,7 @@
 - **영향**: `lib/backup.ts`(신규), `app/modal/backup.tsx`(신규), `expo-file-system`, `expo-sharing`, `expo-document-picker`, `expo-crypto`
 - **날짜**: 2026.10.14
 
-### D-238 기존 Supabase 데이터는 이전하지 않는다 — 처음부터 누적 관리 📝
+### D-238 기존 Supabase 데이터는 이전하지 않는다 — 처음부터 누적 관리 ✅ (단계 0)
 - **결정**: 이전 버전의 나의 시간 설정·기록을 로컬로 옮기지 않는다(개발자 결정 2026.10.14). 로컬 DB는 빈 상태로 시작하며 Time 탭은 비용 기간 미등록 빈 상태로 안내한다. Supabase 코드(`lib/supabase.ts`, `useAuthStore`, `(auth)` 화면, `supabase-js`, `async-storage`, `.env`의 `EXPO_PUBLIC_SUPABASE_*`)는 **단계 0에서 바로 삭제**한다. 이전용 코드·화면은 만들지 않는다. 기존 설치 앱은 삭제(앱 데이터 삭제) 후 새로 설치하는 것을 권장한다(이전 버전의 AsyncStorage 세션 토큰 잔존 방지).
 - **이유**: 개발자 결정 — 처음부터 새로 관리. 이전 구현·검증 부담과 임시 코드가 사라진다.
 - **영향**: 단계 0 범위, setup-build.md
@@ -169,7 +169,7 @@
 - **영향**: `lib/rates.ts`(신규), `useRateStore`, `useTimeStore`, `time.tsx`(계산부), `time-settings.tsx`(전면 교체), `TimeLog`/`RatePeriod` 타입
 - **날짜**: 2026.10.14
 
-### D-240 탭은 Time · 통계 · 설정 3개. 목표 탭을 삭제하고 통계 탭을 신설한다 📝
+### D-240 탭은 Time · 통계 · 설정 3개. 목표 탭을 삭제하고 통계 탭을 신설한다 ✅ 삭제 / 📝 통계 탭 신설(단계 2)
 - **결정**: 목표 탭과 그 화면·컴포넌트·스토어(`goals.tsx`, `components/goal/*`, `useGoal*Store`, `useVoiceFocusStore`)를 삭제하고 음성 입력 관련 의존성(`expo-speech`, `expo-speech-recognition`)도 제거한다. 통계 탭(`stats.tsx`)을 새로 만들어 **요약**(누적 현황·복리 환산·태그 비중·요일 분석·주/월 추이), **마일스톤**, **회고** 세 구간을 둔다.
 - **이유**: 개발자 결정. 기능 성격상 통계 탭이 합리적이라 판단(개발자 위임).
 - **영향**: `(tabs)/_layout.tsx`, `components/ui/icons.tsx`(통계 아이콘), `package.json`, `app.json`
@@ -216,13 +216,14 @@
 - **영향**: `app/(tabs)/time.tsx`, 통계 탭, navigation.md, requirements.md, logic.md
 - **날짜**: 2026.10.14
 
-### D-246 릴리즈 빌드에서 INTERNET 권한을 제거한다 📝
+### D-246 릴리즈 빌드에서 INTERNET 권한을 제거한다 ✅ 매니페스트 반영(병합 결과는 빌드 때 확인)
 - **결정**: 서버가 없으므로(D-234) 릴리즈 빌드의 `AndroidManifest.xml`에서 `android.permission.INTERNET`을 제거해 OS가 앱의 모든 외부 통신을 차단하게 한다. 개발 서버(Metro) 연결이 필요한 디버그 빌드는 `android/app/src/debug/AndroidManifest.xml`(및 `debugOptimized`)에 이 권한을 따로 둔다. 병합된 최종 릴리즈 매니페스트에서 라이브러리가 권한을 다시 넣지 않았는지 확인한다.
 - **이유**: 개발자 결정(2026.10.14) — "인터넷 권한 불필요". 데이터가 기기 밖으로 나가지 않음을 기술적으로 보장한다.
-- **영향**: `AndroidManifest.xml`(main/debug/debugOptimized), setup-build.md. 클라우드·자동 업데이트·원격 기능은 불가(계획 없음)
+- **구현**: `expo-file-system` 등 라이브러리 매니페스트가 `INTERNET`을 선언하므로 main에서 빼는 것만으로는 부족하다. `android/app/src/release/AndroidManifest.xml`에 `tools:node="remove"` 마커를 두고, debug·debugOptimized 매니페스트에 `INTERNET`을 둔다.
+- **영향**: `AndroidManifest.xml`(main/debug/debugOptimized/release), setup-build.md. 클라우드·자동 업데이트·원격 기능은 불가(계획 없음)
 - **날짜**: 2026.10.14
 
-### D-247 `lib/` 순수 함수에 `jest` 단위 테스트를 도입한다 📝
+### D-247 `lib/` 순수 함수에 `jest` 단위 테스트를 도입한다 ✅ 환경 구성(date·timeTicker·pin 테스트 19건). 이후 단계의 순수 함수는 단계마다 추가
 - **결정**: 금액·날짜·암호화처럼 틀리면 곤란한 순수 함수(`rates`, `closing`, `streak`, `compound`, `timeTicker`, 백업 암호화 왕복, 날짜 유틸)에 한해 `jest`(+ `ts-jest` 또는 `babel-jest`) 단위 테스트를 둔다. 화면·스토어는 테스트 대상이 아니다. 각 단계의 완료 조건에 해당 함수의 테스트 통과를 포함한다.
 - **이유**: 개발자 결정(2026.10.14). 프로젝트에 테스트 수단이 없었음.
 - **영향**: `package.json`(devDependencies, `test` 스크립트), `lib/__tests__/*`(신규), conventions.md

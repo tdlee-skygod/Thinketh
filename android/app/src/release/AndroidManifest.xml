@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 서버가 없으므로 릴리즈 빌드는 네트워크 권한이 없다 (D-246). 라이브러리가 선언한 INTERNET도 여기서 제거한다 -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove"/>
+</manifest>

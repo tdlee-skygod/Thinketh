@@ -26,7 +26,7 @@
 ## v2 네이티브 변경 체크리스트 📝
 
 1. `app.json` 플러그인에 `["expo-sqlite", { "useSQLCipher": true }]` 추가, 음성 인식 플러그인 제거
-2. `AndroidManifest.xml`: `allowBackup="false"`(D-236, ✅ 반영). `android/gradle.properties`에 `expo.sqlite.useSQLCipher=true`(✅ 반영, 플러그인이 prebuild 때 쓰는 값과 동일). **`INTERNET` 권한은 `main`에서 제거하고 `src/debug`·`src/debugOptimized`의 매니페스트에 추가**(D-246 — 현재 `INTERNET`은 `main`에만 있어, 옮기지 않으면 디버그 빌드가 Metro에 연결하지 못함). 최종 릴리즈 병합 매니페스트에 `INTERNET`이 다시 들어오지 않았는지 확인. 마지막 단계에서 불필요 권한 제거(D-244): `SYSTEM_ALERT_WINDOW`, `RECORD_AUDIO`, `FOREGROUND_SERVICE*`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, `READ/WRITE_EXTERNAL_STORAGE`, `RECEIVE_BOOT_COMPLETED`(알림 재예약에 필요하면 유지)
+2. `AndroidManifest.xml`: `allowBackup="false"`(D-236, ✅ 반영). `INTERNET`은 main에서 제거하고 debug·debugOptimized에 추가, `src/release/AndroidManifest.xml`에서 `tools:node="remove"`로 라이브러리 선언까지 제거(D-246, ✅ 반영 — 병합 결과는 빌드 때 확인). `android/gradle.properties`에 `expo.sqlite.useSQLCipher=true`(✅ 반영, 플러그인이 prebuild 때 쓰는 값과 동일). **`INTERNET` 권한은 `main`에서 제거하고 `src/debug`·`src/debugOptimized`의 매니페스트에 추가**(D-246 — 현재 `INTERNET`은 `main`에만 있어, 옮기지 않으면 디버그 빌드가 Metro에 연결하지 못함). 최종 릴리즈 병합 매니페스트에 `INTERNET`이 다시 들어오지 않았는지 확인. 마지막 단계에서 불필요 권한 제거(D-244): `SYSTEM_ALERT_WINDOW`, `RECORD_AUDIO`, `FOREGROUND_SERVICE*`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`, `READ/WRITE_EXTERNAL_STORAGE`, `RECEIVE_BOOT_COMPLETED`(알림 재예약에 필요하면 유지)
 3. 단계 8: 위젯 Kotlin 코드·리소스(XML)·매니페스트 `<receiver>` 추가
 4. 단계 9: `Ticker*.kt`, `BootReceiver.kt` 삭제와 `MainApplication.kt`의 `add(TickerPackage())` 제거
 5. 프리빌드는 `--clean` 없이 병합한다. `android/`는 git으로 추적하므로(D-253) 실수로 덮어써도 `git diff`/`git checkout`으로 복구한다. `--clean`을 쓰면 아래 "주요 Gradle 설정"과 키스토어 설정(`keystore.properties`는 git에 없음)을 다시 적용해야 한다.

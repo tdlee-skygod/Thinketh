@@ -23,7 +23,7 @@
 ## 2-1. 테스트 (D-247)
 
 - `lib/`의 순수 함수(`rates`, `closing`, `streak`, `compound`, `timeTicker`, 백업 암호화, 날짜 유틸)는 `lib/__tests__/<파일명>.test.ts`에 `jest` 단위 테스트를 둔다. 화면·스토어는 테스트 대상이 아니다.
-- 금액·날짜 계산을 바꿀 때는 먼저 테스트를 추가/수정하고 통과를 확인한다. 실행: `npm test`(스크립트는 단계 0에서 추가).
+- 금액·날짜 계산을 바꿀 때는 먼저 테스트를 추가/수정하고 통과를 확인한다. 실행: `npm test`. 구성은 `package.json`의 `jest`(`babel-jest` + `babel-preset-expo`, 노드 환경, `@/` 경로 매핑, `@noble` 변환). `jest-expo` 프리셋은 현재 RN 버전과 맞지 않아 쓰지 않는다. 기기 모듈(`expo-crypto` 등)은 `jest.mock`으로 대체한다.
 
 ## 3. 파일 구성 규칙
 
